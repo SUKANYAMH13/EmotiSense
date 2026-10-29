@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EmotiSense — Multimodal Emotion Detection System</title>
+  <meta name="description"
+    content="A multimodal emotion detection system using Facial CNN, BERT-based text analysis, and Speech LSTM model." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+  <div class="toast-box" id="toastBox"></div>
+
+
+  <!-- Page Header -->
+  <header class="page-header">
+    <div class="page-header-inner">
+      <h1 class="page-title">Emotion Analysis Dashboard</h1>
+
+    </div>
+  </header>
+
+  <!-- Module Tabs -->
+  <div class="module-tabs-wrap">
+    <div class="module-tabs">
+      <button class="module-tab active" data-tab="facial" id="tab-facial">
+        <span class="tab-icon">📷</span>
+        <span>
+          <strong>Facial Emotion Recognition</strong>
+          <small>CNN · dlib Face Detection</small>
+        </span>
+      </button>
+      <button class="module-tab" data-tab="text" id="tab-text">
+        <span class="tab-icon">📝</span>
+        <span>
+          <strong>Text Sentiment Analysis</strong>
+          <small>BERT · GoEmotions Taxonomy</small>
+        </span>
+      </button>
+      <button class="module-tab" data-tab="audio" id="tab-audio">
+        <span class="tab-icon">🎤</span>
+        <span>
+          <strong>Speech Emotion Recognition</strong>
+          <small>LSTM · MFCC Features</small>
+        </span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Content Area -->
+  <main class="main-content">
+
+    <!-- ═══ FACIAL TAB ═══════════════════════════════════════ -->
+    <section class="tab-pane active" id="pane-facial">
+
+      <!-- Input Column -->
+      <div class="content-col">
+        <div class="section-card">
+          <div class="card-header">
+            <h2 class="card-title">Input Source</h2>
+            <p class="card-desc">Use a live webcam feed or upload a static image for analysis.</p>
+          </div>
+
+          <!-- Webcam -->
+          <div class="field-group">
+            <label class="field-label">
+              Live Webcam Feed
+              <span class="live-pill" id="livePill" style="display:none">
+                <span class="live-dot"></span> LIVE
+              </span>
+            </label>
+            <div class="webcam-box">
+              <video id="webcamVideo" autoplay playsinline muted></video>
+              <div class="cam-placeholder" id="camPlaceholder">
+                <span class="placeholder-icon">📷</span>
+                <span>Camera not active</span>
+                <small>Click "Start Camera" to begin</small>
+              </div>
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-primary" id="startCamBtn">▶ Start Camera</button>
+              <button class="btn btn-outline" id="stopCamBtn" disabled>⏹ Stop Camera</button>
+            </div>
+          </div>
+
+          <!-- Divider -->
+          <div class="or-divider"><span>or</span></div>
+
+          <!-- Upload -->
+          <div class="field-group">
+            <label class="field-label">Upload Image File</label>
+            <input type="file" id="uploadInput" accept="image/*" />
+            <div class="drop-zone" id="dropZone">
+              <div class="dz-icon">🖼️</div>
+              <div class="dz-text">Drag & drop an image here, or <strong>click to browse</strong></div>
+              <div class="dz-hint">Supported formats: JPG · PNG · WEBP</div>
+            </div>
+            <img id="previewImg" class="preview-img" alt="Uploaded Image Preview" />
+            <div class="btn-row" id="uploadBtns" style="display:none">
+              <button class="btn btn-primary" id="analyzeUploadBtn">🔍 Run Analysis</button>
+              <button class="btn btn-outline" id="clearUploadBtn">✕ Clear</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Result Column -->
+      <div class="content-col">
+        <div class="section-card result-card">
+          <div class="card-header">
+            <h2 class="card-title">Detection Result</h2>
+            <p class="card-desc">Predicted emotion label, confidence score, and class distribution.</p>
+          </div>
+          <div class="result-panel" id="facialResult">
+            <div class="result-empty">
+              <span class="empty-icon">🔍</span>
+              <span class="empty-title">Awaiting Input</span>
+              <span class="empty-desc">Start the webcam or upload an image to begin emotion detection.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Info Card -->
+        <div class="info-card">
+          <strong>About this module</strong>
+          <p>Uses a CNN trained on the FER-2013 dataset with dlib face localization and landmark alignment. Classifies 7 discrete
+            emotion categories with real-time inference using an XCeption model.</p>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ═══ TEXT TAB ══════════════════════════════════════════ -->
+    <section class="tab-pane" id="pane-text">
+
+      <!-- Input Column -->
+      <div class="content-col">
+        <div class="section-card">
+          <div class="card-header">
+            <h2 class="card-title">Text Input</h2>
+            <p class="card-desc">Enter a sentence or paragraph to detect the expressed emotion.</p>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="textInput">Input Text</label>
+            <textarea id="textInput" maxlength="512"
+              placeholder="e.g. I am really excited about the results of our project!"></textarea>
+          </div>
+          <div class="btn-row" style="margin-top:16px">
+            <button class="btn btn-primary" id="analyzeTextBtn">⚡ Analyse Emotion</button>
+            <button class="btn btn-outline" id="clearTextBtn">✕ Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Result Column -->
+      <div class="content-col">
+        <div class="section-card result-card">
+          <div class="card-header">
+            <h2 class="card-title">Analysis Result</h2>
+            <p class="card-desc">Predicted emotion labels ranked by probability score.</p>
+          </div>
+          <div class="result-panel" id="textResult">
+            <div class="result-empty">
+              <span class="empty-icon">💬</span>
+              <span class="empty-title">Awaiting Input</span>
+              <span class="empty-desc">Enter text above and click "Analyse Emotion" to begin.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Info Card -->
+        <div class="info-card">
+          <strong>About this module</strong>
+          <p>Uses a fine-tuned BERT (bert-base-uncased) model trained on the GoEmotions dataset. Classifies text across
+            28 fine-grained emotion categories using multi-label classification.</p>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ═══ AUDIO TAB ═════════════════════════════════════════ -->
+    <section class="tab-pane" id="pane-audio">
+
+      <!-- Input Column -->
+      <div class="content-col">
+        <div class="section-card">
+          <div class="card-header">
+            <h2 class="card-title">Audio Input</h2>
+            <p class="card-desc">Record your voice live or upload a WAV / MP3 audio file.</p>
+          </div>
+
+          <!-- Mic Recording -->
+          <div class="field-group">
+            <label class="field-label">
+              Live Microphone Recording
+              <span class="live-pill" id="micPill" style="display:none">
+                <span class="live-dot"></span> RECORDING
+              </span>
+            </label>
+            <div class="webcam-box" id="micBox" style="height:80px; display:flex; align-items:center; justify-content:center; gap:12px; flex-direction:column">
+              <div id="micPlaceholder" style="display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--muted)">
+                <span style="font-size:2rem">🎤</span>
+                <small>Click "Start Recording" to capture your voice</small>
+              </div>
+              <audio id="audioPlayback" controls style="display:none; width:100%; margin-top:8px"></audio>
+            </div>
+            <div class="btn-row" style="margin-top:10px">
+              <button class="btn btn-primary" id="startMicBtn">◕ Start Recording</button>
+              <button class="btn btn-outline" id="stopMicBtn" disabled>⏹ Stop &amp; Analyze</button>
+              <button class="btn btn-outline" id="clearMicBtn" style="display:none">✕ Clear</button>
+            </div>
+          </div>
+
+          <!-- Divider -->
+          <div class="or-divider"><span>or</span></div>
+
+          <!-- Upload Audio -->
+          <div class="field-group">
+            <label class="field-label">Upload Audio File</label>
+            <input type="file" id="audioUploadInput" accept="audio/wav,audio/mp3,audio/mpeg,audio/*" />
+            <div class="drop-zone" id="audioDZ">
+              <div class="dz-icon">🎧</div>
+              <div class="dz-text">Drag &amp; drop an audio file here, or <strong>click to browse</strong></div>
+              <div class="dz-hint">Supported formats: WAV · MP3</div>
+            </div>
+            <div class="btn-row" id="audioUploadBtns" style="display:none">
+              <button class="btn btn-primary" id="analyzeAudioBtn">🔍 Run Analysis</button>
+              <button class="btn btn-outline" id="clearAudioBtn">✕ Clear</button>
+            </div>
+            <p id="audioFileName" style="font-size:0.82rem; color:var(--muted); margin-top:6px"></p>
+            <audio id="uploadedAudioPlayer" controls
+                   style="display:none; width:100%; margin-top:10px; border-radius:8px;"></audio>
+          </div>
+        </div>
+      </div>
+
+      <!-- Result Column -->
+      <div class="content-col">
+        <div class="section-card result-card">
+          <div class="card-header">
+            <h2 class="card-title">Speech Result</h2>
+            <p class="card-desc">Predicted emotion from vocal tone and speech pattern.</p>
+          </div>
+          <div class="result-panel" id="audioResult">
+            <div class="result-empty">
+              <span class="empty-icon">🎤</span>
+              <span class="empty-title">Awaiting Audio</span>
+              <span class="empty-desc">Record your voice or upload an audio file to detect speech emotion.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Info Card -->
+        <div class="info-card">
+          <strong>About this module</strong>
+          <p>Uses an LSTM neural network trained on the TESS Toronto Emotional Speech dataset. Extracts 40-band MFCC
+            features from 3-second audio clips. Classifies 7 speech emotion categories: Angry, Disgust, Fear, Happy, Neutral, Surprise (ps), Sad.</p>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- ═══ FUSION PANEL ═══════════════════════════════════════════════ -->
+  <section class="fusion-section" id="fusionSection">
+    <div class="fusion-inner">
+
+      <div class="fusion-heading">
+        <span class="fusion-title-icon">🧠</span>
+        <div>
+          <h2 class="fusion-title">Multimodal Fusion — Final Verdict</h2>
+          <p class="fusion-subtitle">Give inputs to all three models, then click the button to see the majority vote</p>
+        </div>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="fusion-progress-row">
+        <span class="fusion-progress-label" id="fusionProgressLabel">0 / 3 models ready</span>
+        <div class="fusion-progress-track">
+          <div class="fusion-progress-fill" id="fusionProgressFill" style="width:0%"></div>
+        </div>
+        <button class="btn btn-fusion" id="getFinalVerdictBtn" disabled>
+          🧠 Get Final Verdict
+        </button>
+      </div>
+
+      <div class="fusion-grid">
+
+        <!-- Vote: Facial -->
+        <div class="vote-card" id="voteCardFacial">
+          <div class="vote-model-icon">📷</div>
+          <div class="vote-model-name">Facial</div>
+          <div class="vote-model-tech">CNN · dlib Detection</div>
+          <div class="vote-result-emoji" id="vr-facial-emoji">—</div>
+          <div class="vote-result-label" id="vr-facial-label">No prediction yet</div>
+          <div class="vote-result-conf" id="vr-facial-conf"></div>
+        </div>
+
+        <!-- Vote: Text -->
+        <div class="vote-card" id="voteCardText">
+          <div class="vote-model-icon">📝</div>
+          <div class="vote-model-name">Text</div>
+          <div class="vote-model-tech">BERT · GoEmotions</div>
+          <div class="vote-result-emoji" id="vr-text-emoji">—</div>
+          <div class="vote-result-label" id="vr-text-label">No prediction yet</div>
+          <div class="vote-result-conf" id="vr-text-conf"></div>
+        </div>
+
+        <!-- Vote: Speech -->
+        <div class="vote-card" id="voteCardSpeech">
+          <div class="vote-model-icon">🎤</div>
+          <div class="vote-model-name">Speech</div>
+          <div class="vote-model-tech">LSTM · MFCC</div>
+          <div class="vote-result-emoji" id="vr-speech-emoji">—</div>
+          <div class="vote-result-label" id="vr-speech-label">No prediction yet</div>
+          <div class="vote-result-conf" id="vr-speech-conf"></div>
+        </div>
+
+        <!-- Arrow -->
+        <div class="fusion-arrow-col">
+          <div class="fusion-arrow">⟹</div>
+          <div class="fusion-arrow-label">Majority Vote</div>
+        </div>
+
+        <!-- Final Verdict -->
+        <div class="verdict-card" id="verdictCard">
+          <div class="verdict-badge">Final Verdict</div>
+          <div class="verdict-emoji" id="verdictEmoji">❓</div>
+          <div class="verdict-emotion" id="verdictEmotion">Awaiting Predictions</div>
+          <div class="verdict-info" id="verdictInfo">Run all 3 models and click “Get Final Verdict”</div>
+          <div class="verdict-tally" id="verdictTally"></div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="page-footer">
+    <span>EmotiSense · Multimodal Emotion Detection System · Academic Research Project</span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
